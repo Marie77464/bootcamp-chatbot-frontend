@@ -192,6 +192,65 @@
   font-size: 0.8rem;
 }
 
+/* Personal note: a "sticky note" look, different from the bubbles and from the notification pill. */
+.note {
+  align-self: center;
+  max-width: 80%;
+  padding: 8px 14px;
+  border: 1px dashed var(--note-border);
+  border-left: 4px solid var(--note-border);
+  border-radius: 8px;
+  background: var(--note-bg);
+  color: var(--note-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.note-label {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.quiz,
+.summary {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+
+.quiz {
+  align-self: flex-start;
+  border: 2px solid var(--quiz-border);
+  background: var(--quiz-bg);
+  color: var(--quiz-text);
+}
+
+.summary {
+  align-self: center;
+  border: 1px solid var(--summary-border);
+  background: var(--summary-bg);
+  color: var(--summary-text);
+}
+
+.extra-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.quiz > :last-child,
+.summary > :last-child {
+  margin-bottom: 0;
+}
+
 .bubble.typing {
   color: var(--muted);
 }
@@ -222,6 +281,23 @@
   cursor: pointer;
 }
 
+/* Two stacked buttons: "Envoyer" (to the LLM) and "Ajouter une note" (kept private). */
+.composer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.composer-actions button {
+  flex: 1;
+}
+
+.composer .note-button {
+  border: 1px solid var(--note-border);
+  background: transparent;
+  color: var(--note-text);
+}
+
 .composer button:disabled,
 .composer textarea:disabled {
   opacity: 0.5;
@@ -247,4 +323,19 @@
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
+}
+
+.model-bar {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+.model-select {
+  color-scheme: light dark;
+  background: transparent;
+  color: inherit;
+  border: 1px solid rgba(128, 128, 128, 0.5);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font: inherit;
 }

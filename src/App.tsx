@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import {
+  addNote,
   createConversation,
   getMessages,
   listConversations,
-  sendMessage,
+  listModels,
+  streamMessage,
   type ConversationSummary,
 } from './api'
 import ChatWindow, { type ChatMessage } from './components/ChatWindow'
@@ -20,7 +22,11 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(false)
+  const [savingNote, setSavingNote] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Models offered by the backend (list defined on the server); '' = let the backend use its default.
+  const [models, setModels] = useState<string[]>([])
+  const [model, setModel] = useState('')
 
   // On startup, load the history and open the most recent conversation.
   useEffect(() => {
@@ -28,6 +34,16 @@ export default function App() {
       .then((list) => {
         setConversations(list)
         if (list.length > 0) setActiveId(list[0].id)
+      })
+      .catch((err) => setError(errorMessage(err)))
+  }, [])
+
+  // Load the allowed models once; the backend's default is preselected.
+  useEffect(() => {
+    listModels()
+      .then((info) => {
+        setModels(info.models)
+        setModel(info.default)
       })
       .catch((err) => setError(errorMessage(err)))
   }, [])
@@ -47,7 +63,7 @@ export default function App() {
   }, [activeId])
 
   function selectConversation(id: number) {
-    if (loading || id === activeId) return
+    if (loading || savingNote || id === activeId) return
     setError(null)
     setDraft('')
     setMessages([])
@@ -55,7 +71,7 @@ export default function App() {
   }
 
   async function handleNew() {
-    if (loading) return
+    if (loading || savingNote) return
     setError(null)
     try {
       const id = await createConversation()
@@ -75,26 +91,69 @@ export default function App() {
     if (activeId === null) return
     const text = draft.trim()
     const isFirstMessage = messages.length === 0
+    const baseLength = messages.length // to roll back the optimistic messages if the turn fails
     setError(null)
     setDraft('')
     setMessages((list) => [...list, { role: 'user', content: text }])
     setLoading(true)
+
+    // The reply is shown as it is generated: the assistant bubble appears with the first piece of text.
+    let started = false
+    const onDelta = (piece: string) => {
+      if (!started) {
+        started = true
+        setMessages((list) => [...list, { role: 'assistant', content: piece }])
+      } else {
+        setMessages((list) => {
+          const last = list[list.length - 1]
+          return [...list.slice(0, -1), { ...last, content: last.content + piece }]
+        })
+      }
+    }
+
     try {
-      const { reply, notification } = await sendMessage(activeId, text)
+      const { reply, notification, summary, quiz } = await streamMessage(
+        activeId,
+        text,
+        model || null,
+        onDelta,
+      )
       setMessages((list) => [
-        ...list,
-        { role: 'assistant', content: reply },
+        // Normally the bubble already shows the reply; add it only if nothing was streamed.
+        ...(started ? list : [...list, { role: 'assistant' as const, content: reply }]),
         ...(notification ? [{ role: 'system-notification' as const, content: notification }] : []),
+        ...(summary ? [{ role: 'summary' as const, content: summary }] : []),
+        ...(quiz ? [{ role: 'quiz' as const, content: quiz }] : []),
       ])
       // The first message becomes the conversation's preview in the sidebar.
       if (isFirstMessage) setConversations(await listConversations())
     } catch (err) {
-      // The backend didn't save the turn: drop the optimistic message and give the text back.
-      setMessages((list) => list.slice(0, -1))
+      // The backend didn't save the turn (nothing is written if the stream breaks):
+      // drop the optimistic messages and give the text back.
+      setMessages((list) => list.slice(0, baseLength))
       setDraft(text)
       setError(errorMessage(err))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleAddNote() {
+    if (activeId === null) return
+    const text = draft.trim()
+    if (!text) return
+    setError(null)
+    setSavingNote(true)
+    try {
+      // Not optimistic: the backend can refuse (e.g. empty conversation), so wait for its answer.
+      const note = await addNote(activeId, text)
+      setMessages((list) => [...list, { role: 'note', content: note.content }])
+      setDraft('')
+    } catch (err) {
+      // The draft is kept so nothing is lost.
+      setError(errorMessage(err))
+    } finally {
+      setSavingNote(false)
     }
   }
 
@@ -126,9 +185,14 @@ export default function App() {
           <ChatWindow
             messages={messages}
             loading={loading}
+            savingNote={savingNote}
             draft={draft}
+            models={models}
+            model={model}
+            onModelChange={setModel}
             onDraftChange={setDraft}
             onSend={handleSend}
+            onAddNote={handleAddNote}
           />
         )}
       </main>

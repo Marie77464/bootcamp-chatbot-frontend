@@ -11,6 +11,15 @@
   --bubble-assistant: #f1f3f5;
   --error-bg: #fdecec;
   --error-text: #a61b1b;
+  --note-bg: #fff8db;
+  --note-border: #e0b84a;
+  --note-text: #6b5300;
+  --quiz-bg: #e6f4ea;
+  --quiz-border: #2f9e44;
+  --quiz-text: #1b5e20;
+  --summary-bg: #e7f1ff;
+  --summary-border: #4c6ef5;
+  --summary-text: #1c3d99;
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
@@ -32,6 +41,15 @@
     --bubble-assistant: #262930;
     --error-bg: #3b1d1f;
     --error-text: #f5a5a5;
+    --note-bg: #3a3320;
+    --note-border: #b8923a;
+    --note-text: #f0d98a;
+    --quiz-bg: #1d3324;
+    --quiz-border: #51cf66;
+    --quiz-text: #b2f2bb;
+    --summary-bg: #1f2a44;
+    --summary-border: #748ffc;
+    --summary-text: #bac8ff;
   }
 }
 
